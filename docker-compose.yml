@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  
+  mysql-db:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+  
+  redis:
+    image: redis:latest
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+
+  
+  authentication-service:
+    image: authentication-service:1.0
+    ports:
+      - "${AUTHENTICATION_SERVICE_PORT}:8080"
+    depends_on:
+      - mysql-db
+
+  
+  common-data-service:
+    image: common-data-service:1.0
+    ports:
+      - "${COMMON_DATA_SERVICE_PORT}:8080"
+    environment:
+      PORT: ${PORT}
+      ACTIVE_PROFILE: ${ACTIVE_PROFILE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_SCHEMA: ${DB_SCHEMA}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}  
+    depends_on:
+      - mysql-db
+
+  
+  payment-service:
+    image: payment-service:1.0
+    ports:
+      - "${PAYMENT_SERVICE_PORT}:8082"
+    depends_on:
+      - mysql-db
+
+
+  search-suggestion-service:
+    image: search-suggestion-service:1.0
+    ports:
+      - "${SEARCH_SUGGESTION_SERVICE_PORT}:8083"
+    depends_on:
+      - mysql-db
+
+
+  client:
+    image: client3:latest
+    ports:
+      - "${REACT_APP_PORT}:3000"
+    depends_on:
+      - authentication-service
+      - common-data-service
+      - payment-service
+      - search-suggestion-service
+
+volumes:
+  mysql-data:
+
+
