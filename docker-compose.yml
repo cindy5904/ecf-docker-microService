@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:  
   mysql-db:
@@ -13,33 +13,44 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     networks:
-      - ecf-docker   
-  
+      - ecf-docker 
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5    
+    
   redis:
-    image: redis:latest
+    image: redis:7.4.0-alpine
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "6379:6379"
     networks:
-      - ecf-docker   
+      - ecf-docker 
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5    
 
   authentication-service:
     build:
       context: server/authentication-service
       dockerfile: Dockerfile
     ports:
-      - "${AUTHENTICATION_SERVICE_PORT}:8080"
+      - "${REACT_APP_AUTHENTICATION_SERVICE_PORT}:${AUTHENTICATION_SERVICE_PORT}"
     environment:
       PORT: ${AUTHENTICATION_SERVICE_PORT}
       ACTIVE_PROFILE: ${ACTIVE_PROFILE}
       DB_HOST: mysql-db
       DB_PORT: ${DB_PORT}
-      DB_SCHEMA: ${DB_SCHEMA}
-      DB_USER: ${DB_USER}
-      DB_PASS: ${DB_PASS}  
+      DB_SCHEMA: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASS: ${MYSQL_PASSWORD}  
     depends_on:
-      - mysql-db 
+      - mysql-db
+      - redis 
     networks:
       - ecf-docker  
 
@@ -48,15 +59,15 @@ services:
       context: server/common-data-service
       dockerfile: Dockerfile
     ports:
-      - "${COMMON_DATA_SERVICE_PORT}:8080"
+      - "${REACT_APP_COMMON_DATA_SERVICE_PORT}:${COMMON_DATA_SERVICE_PORT}"
     environment:
       PORT: ${COMMON_DATA_SERVICE_PORT}
       ACTIVE_PROFILE: ${ACTIVE_PROFILE}
       DB_HOST: mysql-db
       DB_PORT: ${DB_PORT}
-      DB_SCHEMA: ${DB_SCHEMA}
-      DB_USER: ${DB_USER}
-      DB_PASS: ${DB_PASS}
+      DB_SCHEMA: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASS: ${MYSQL_ROOT_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -71,9 +82,18 @@ services:
       context: server/payment-service
       dockerfile: Dockerfile
     ports:
-      - "${PAYMENT_SERVICE_PORT}"
+      - "${PAYMENT_SERVICE_PORT}:${PAYMENT_SERVICE_PORT}"
     environment:
-      PORT: ${PAYMENT_SERVICE_PORT} 
+      PORT: ${PAYMENT_SERVICE_PORT}
+      DB_HOST: mysql-db
+      DB_PORT: ${DB_PORT}
+      DB_SCHEMA: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASS: ${MYSQL_PASSWORD}
+      ACTIVE_PROFILE: ${ACTIVE_PROFILE}
+    depends_on:
+      - mysql-db
+      - redis 
     networks:
       - ecf-docker  
 
@@ -82,7 +102,7 @@ services:
       context: server/search-suggestion-service
       dockerfile: Dockerfile
     ports:
-      - "${SEARCH_SUGGESTION_SERVICE_PORT}:8080"
+      - "${REACT_APP_SEARCH_SUGGESTION_SERVICE_PORT}:${SEARCH_SUGGESTION_SERVICE_PORT}"
     environment:
       PORT: ${SEARCH_SUGGESTION_SERVICE_PORT}
       ACTIVE_PROFILE: ${ACTIVE_PROFILE} 
