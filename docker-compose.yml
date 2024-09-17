@@ -85,7 +85,8 @@ services:
       - "${SEARCH_SUGGESTION_SERVICE_PORT}:8080"
     environment:
       PORT: ${SEARCH_SUGGESTION_SERVICE_PORT}
-      ACTIVE_PROFILE: ${ACTIVE_PROFILE}  
+      ACTIVE_PROFILE: ${ACTIVE_PROFILE} 
+      COMMON_DATA_SERVICE_URL: http://common-data-service:${COMMON_DATA_SERVICE_PORT} 
     depends_on:
       - common-data-service
     networks:
@@ -95,12 +96,12 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
+      args:
+        REACT_APP_AUTHENTICATION_SERVICE_PORT: ${REACT_APP_AUTHENTICATION_SERVICE_PORT}
+        REACT_APP_COMMON_DATA_SERVICE_PORT: ${REACT_APP_COMMON_DATA_SERVICE_PORT}
+        REACT_APP_SEARCH_SUGGESTION_SERVICE_PORT: ${REACT_APP_SEARCH_SUGGESTION_SERVICE_PORT}
     ports:
       - "${REACT_APP_PORT}:3000" 
-    environment:
-      REACT_APP_AUTHENTICATION_SERVICE_URL: ${REACT_APP_AUTHENTICATION_SERVICE_URL}
-      REACT_APP_COMMON_DATA_SERVICE_URL: ${REACT_APP_COMMON_DATA_SERVICE_URL}
-      REACT_APP_SEARCH_SUGGESTION_SERVICE_URL: ${REACT_APP_SEARCH_SUGGESTION_SERVICE_URL}
     depends_on:
       - authentication-service
       - common-data-service
