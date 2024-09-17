@@ -1,24 +1,26 @@
-FROM node:14 AS builder
+# Utiliser l'image Node.js officielle comme image de base
+FROM node:14 AS build
+
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+
+COPY package*.json ./
 
 RUN npm install
 
 COPY . .
 
+
 RUN npm run build
 
-FROM node:14
 
-WORKDIR /app
+FROM nginx:alpine
 
-COPY --from=builder /app/build /app/build
-COPY --from=builder /app/server.js /app/
-COPY --from=builder /app/package.json /app/
-COPY --from=builder /app/node_modules /app/node_modules
 
-EXPOSE 3000
+COPY --from=build /app/build /usr/share/nginx/html
 
-CMD ["npm", "start"]
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

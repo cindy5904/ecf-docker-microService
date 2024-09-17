@@ -26,6 +26,14 @@ services:
     image: authentication-service:1.0
     ports:
       - "${AUTHENTICATION_SERVICE_PORT}:8080"
+    environment:
+      PORT: ${PORT}
+      ACTIVE_PROFILE: ${ACTIVE_PROFILE}
+      DB_HOST: mysql-db
+      DB_PORT: ${DB_PORT}
+      DB_SCHEMA: ${DB_SCHEMA}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}  
     depends_on:
       - mysql-db
 
@@ -37,19 +45,25 @@ services:
     environment:
       PORT: ${PORT}
       ACTIVE_PROFILE: ${ACTIVE_PROFILE}
-      DB_HOST: ${DB_HOST}
+      DB_HOST: mysql-db
       DB_PORT: ${DB_PORT}
       DB_SCHEMA: ${DB_SCHEMA}
       DB_USER: ${DB_USER}
-      DB_PASS: ${DB_PASS}  
+      DB_PASS: ${DB_PASS}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       - mysql-db
+      - redis
 
   
   payment-service:
     image: payment-service:1.0
     ports:
-      - "${PAYMENT_SERVICE_PORT}:8082"
+      - "${PAYMENT_SERVICE_PORT}:8080"
+    environment:
+      PORT: ${PORT}  
     depends_on:
       - mysql-db
 
@@ -63,12 +77,20 @@ services:
       ACTIVE_PROFILE: ${ACTIVE_PROFILE}  
     depends_on:
       - mysql-db
+      - redis
 
 
   client:
-    image: client3:latest
+    build:
+      context: ./client
+      dockerfile: Dockerfile
     ports:
-      - "${REACT_APP_PORT}:3000"
+      - "${REACT_APP_PORT}:80" # Mappez le port 80 du conteneur au port défini dans .env
+    environment:
+      REACT_APP_PORT: ${REACT_APP_PORT}
+      REACT_CLIENT_URL: ${REACT_CLIENT_URL}
+      REACT_APP_ENVIRONMENT: ${REACT_APP_ENVIRONMENT}
+      ACTIVE_PROFILE: ${ACTIVE_PROFILE}
     depends_on:
       - authentication-service
       - common-data-service
