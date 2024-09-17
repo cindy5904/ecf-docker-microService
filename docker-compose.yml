@@ -1,7 +1,6 @@
 version: '3.8'
 
-services:
-  
+services:  
   mysql-db:
     image: mysql
     environment:
@@ -13,6 +12,8 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+    networks:
+      - ecf-docker   
   
   redis:
     image: redis:latest
@@ -20,6 +21,8 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "6379:6379"
+    networks:
+      - ecf-docker   
 
   authentication-service:
     build:
@@ -28,7 +31,7 @@ services:
     ports:
       - "${AUTHENTICATION_SERVICE_PORT}:8080"
     environment:
-      PORT: 7000
+      PORT: ${AUTHENTICATION_SERVICE_PORT}
       ACTIVE_PROFILE: ${ACTIVE_PROFILE}
       DB_HOST: mysql-db
       DB_PORT: ${DB_PORT}
@@ -36,7 +39,9 @@ services:
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}  
     depends_on:
-      - mysql-db
+      - mysql-db 
+    networks:
+      - ecf-docker  
 
   common-data-service:
     build:
@@ -45,7 +50,7 @@ services:
     ports:
       - "${COMMON_DATA_SERVICE_PORT}:8080"
     environment:
-      PORT: 9000
+      PORT: ${COMMON_DATA_SERVICE_PORT}
       ACTIVE_PROFILE: ${ACTIVE_PROFILE}
       DB_HOST: mysql-db
       DB_PORT: ${DB_PORT}
@@ -58,17 +63,19 @@ services:
     depends_on:
       - mysql-db
       - redis
+    networks:
+      - ecf-docker  
 
   payment-service:
     build:
       context: server/payment-service
       dockerfile: Dockerfile
     ports:
-      - "${PAYMENT_SERVICE_PORT}:8080"
+      - "${PAYMENT_SERVICE_PORT}"
     environment:
-      PORT: 9050 
-    depends_on:
-      - mysql-db
+      PORT: ${PAYMENT_SERVICE_PORT} 
+    networks:
+      - ecf-docker  
 
   search-suggestion-service:
     build:
@@ -77,28 +84,31 @@ services:
     ports:
       - "${SEARCH_SUGGESTION_SERVICE_PORT}:8080"
     environment:
-      PORT: 10000
+      PORT: ${SEARCH_SUGGESTION_SERVICE_PORT}
       ACTIVE_PROFILE: ${ACTIVE_PROFILE}  
     depends_on:
-      - mysql-db
-      - redis
+      - common-data-service
+    networks:
+      - ecf-docker  
 
   client:
     build:
       context: ./client
       dockerfile: Dockerfile
     ports:
-      - "${REACT_APP_PORT}:80" 
+      - "${REACT_APP_PORT}:3000" 
     environment:
-      REACT_APP_PORT: ${REACT_APP_PORT}
-      REACT_CLIENT_URL: ${REACT_CLIENT_URL}
-      REACT_APP_ENVIRONMENT: ${REACT_APP_ENVIRONMENT}
-      ACTIVE_PROFILE: ${ACTIVE_PROFILE}
+      REACT_APP_AUTHENTICATION_SERVICE_URL: ${REACT_APP_AUTHENTICATION_SERVICE_URL}
+      REACT_APP_COMMON_DATA_SERVICE_URL: ${REACT_APP_COMMON_DATA_SERVICE_URL}
+      REACT_APP_SEARCH_SUGGESTION_SERVICE_URL: ${REACT_APP_SEARCH_SUGGESTION_SERVICE_URL}
     depends_on:
       - authentication-service
       - common-data-service
       - payment-service
       - search-suggestion-service
+    
+networks:
+  ecf-docker:
 
 volumes:
   mysql-data:
