@@ -28,11 +28,7 @@ services:
       - "6379:6379"
     networks:
       - ecf-docker 
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5    
+      
 
   authentication-service:
     build:
